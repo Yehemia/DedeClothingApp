@@ -10,12 +10,22 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.Alert;
+import javafx.scene.control.cell.PropertyValueFactory;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ManagerController {
+    @FXML
+    private TableColumn<Transaction, Timestamp> colDate;
+    @FXML
+    private TableColumn<Transaction, String> colCashier;
+    @FXML
+    private TableColumn<Transaction, Double> colTotal;
+    @FXML
+    private TableColumn<Transaction, String> colMethod;
     @FXML
     private TableView<Transaction> transactionTable;
     @FXML
@@ -36,6 +46,11 @@ public class ManagerController {
 
     @FXML
     public void initialize() {
+        colDate.setCellValueFactory(new PropertyValueFactory<>("transactionDate"));
+        colCashier.setCellValueFactory(new PropertyValueFactory<>("userId")); // Jika ada nama, ubah ke "userName"
+        colTotal.setCellValueFactory(new PropertyValueFactory<>("totalPrice"));
+        colMethod.setCellValueFactory(new PropertyValueFactory<>("paymentMethod"));
+
         loadTransactions();
         loadSalesChart();
     }

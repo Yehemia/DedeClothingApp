@@ -19,10 +19,10 @@
         <VBox spacing="10">
             <TableView fx:id="transactionTable">
                 <columns>
-                    <TableColumn text="Tanggal"/>
-                    <TableColumn text="Kasir"/>
-                    <TableColumn text="Total"/>
-                    <TableColumn text="Metode Pembayaran"/>
+                    <TableColumn fx:id="colDate" text="Tanggal"/>
+                    <TableColumn fx:id="colCashier" text="Kasir"/>
+                    <TableColumn fx:id="colTotal" text="Total"/>
+                    <TableColumn fx:id="colMethod" text="Metode Pembayaran"/>
                 </columns>
             </TableView>
             <HBox spacing="10">

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.collections.FXCollections?>
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.dedeclothingstore.controller.KasirController">
+    <top>
+        <Label text="Kasir - Dede Clothing Store" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    </top>
+    <center>
+        <VBox spacing="10">
+            <TableView fx:id="productTable">
+                <columns>
+                    <TableColumn fx:id="colName" text="Nama Produk"/>
+                    <TableColumn fx:id="colPrice" text="Harga"/>
+                    <TableColumn fx:id="colStock" text="Stok"/>
+                </columns>
+            </TableView>
+            <HBox spacing="10">
+                <Label text="Jumlah: "/>
+                <TextField fx:id="quantityField" promptText="Masukkan jumlah"/>
+            </HBox>
+        </VBox>
+    </center>
+    <bottom>
+        <HBox spacing="10">
+            <Label text="Total: " />
+            <Label fx:id="totalLabel" text="Rp 0.00" style="-fx-font-size: 18px;"/>
+            <ComboBox fx:id="paymentMethod">
+                <items>
+                    <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="Cash"/>
+                        <String fx:value="Cashless - QRIS"/>
+                        <String fx:value="Cashless - Kartu"/>
+                    </FXCollections>
+                </items>
+            </ComboBox>
+            <Button text="Bayar" onAction="#handlePayment"/>
+        </HBox>
+    </bottom>
+</BorderPane>

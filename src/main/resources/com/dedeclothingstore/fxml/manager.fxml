@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.dedeclothingstore.controller.ManagerController">
+    <top>
+        <Label text="Dashboard Manajer" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    </top>
+    <center>
+        <VBox spacing="10">
+            <TableView fx:id="transactionTable">
+                <columns>
+                    <TableColumn text="Tanggal"/>
+                    <TableColumn text="Kasir"/>
+                    <TableColumn text="Total"/>
+                    <TableColumn text="Metode Pembayaran"/>
+                </columns>
+            </TableView>
+            <HBox spacing="10">
+                <Label text="Filter Tanggal:"/>
+                <DatePicker fx:id="startDate"/>
+                <DatePicker fx:id="endDate"/>
+                <Button text="Tampilkan Laporan" onAction="#filterTransactions"/>
+            </HBox>
+        </VBox>
+    </center>
+    <bottom>
+        <VBox>
+            <Label text="Grafik Penjualan" style="-fx-font-size: 18px;"/>
+            <LineChart fx:id="salesChart">
+                <xAxis>
+                    <CategoryAxis fx:id="xAxis"/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis fx:id="yAxis"/>
+                </yAxis>
+            </LineChart>
+
+        </VBox>
+    </bottom>
+</BorderPane>
+

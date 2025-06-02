@@ -47,7 +47,7 @@ public class ManagerController {
     @FXML
     public void initialize() {
         colDate.setCellValueFactory(new PropertyValueFactory<>("transactionDate"));
-        colCashier.setCellValueFactory(new PropertyValueFactory<>("userId")); // Jika ada nama, ubah ke "userName"
+        colCashier.setCellValueFactory(new PropertyValueFactory<>("userId"));
         colTotal.setCellValueFactory(new PropertyValueFactory<>("totalPrice"));
         colMethod.setCellValueFactory(new PropertyValueFactory<>("paymentMethod"));
 

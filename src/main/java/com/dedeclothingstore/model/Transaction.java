@@ -1,22 +1,23 @@
 package com.dedeclothingstore.model;
 
-import java.util.Date;
+import java.sql.Timestamp;
 
 public class Transaction {
     private int transactionId;
     private int userId;
-    private Date transactionDate;
+    private Timestamp transactionDate;  // ganti dari Date ke Timestamp
     private double totalPrice;
     private String paymentMethod;
 
-    public Transaction(int transactionId,int userId, Date transactionDate, double totalPrice, String paymentMethod) {
+    public Transaction(int transactionId, int userId, Timestamp transactionDate, double totalPrice, String paymentMethod) {
         this.transactionId = transactionId;
         this.userId = userId;
         this.transactionDate = transactionDate;
         this.totalPrice = totalPrice;
         this.paymentMethod = paymentMethod;
     }
-    public Transaction(int userId, Date transactionDate, double totalPrice, String paymentMethod) {
+
+    public Transaction(int userId, Timestamp transactionDate, double totalPrice, String paymentMethod) {
         this.userId = userId;
         this.transactionDate = transactionDate;
         this.totalPrice = totalPrice;
@@ -39,12 +40,11 @@ public class Transaction {
         this.userId = userId;
     }
 
-
-    public Date getTransactionDate() {
+    public Timestamp getTransactionDate() {
         return transactionDate;
     }
 
-    public void setTransactionDate(Date transactionDate) {
+    public void setTransactionDate(Timestamp transactionDate) {
         this.transactionDate = transactionDate;
     }
 

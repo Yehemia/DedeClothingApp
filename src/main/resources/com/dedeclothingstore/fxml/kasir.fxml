@@ -1,47 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
-<?import javafx.collections.FXCollections?>
-<BorderPane xmlns="http://javafx.com/javafx"
+<BorderPane xmlns="http://javafx.com/javafx/8"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.dedeclothingstore.controller.KasirController">
+
     <top>
-        <Label text="Kasir - Dede Clothing Store" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+        <Label text="Kasir - Dede Clothing Store"
+               style="-fx-font-size: 20px; -fx-font-weight: bold;"
+               BorderPane.alignment="CENTER"/>
     </top>
+
     <center>
         <VBox spacing="10">
-            <TableView fx:id="productTable">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Label text="Daftar Produk" style="-fx-font-weight: bold;"/>
+            <TableView fx:id="productTable" prefHeight="200">
                 <columns>
                     <TableColumn fx:id="colName" text="Nama Produk"/>
                     <TableColumn fx:id="colPrice" text="Harga"/>
                     <TableColumn fx:id="colStock" text="Stok"/>
                 </columns>
             </TableView>
+
             <HBox spacing="10">
-                <Label text="Jumlah: "/>
+                <Label text="Jumlah:"/>
                 <TextField fx:id="quantityField" promptText="Masukkan jumlah"/>
+                <Button text="Tambah ke Keranjang" onAction="#handleAddToCart"/>
             </HBox>
         </VBox>
     </center>
+
     <bottom>
-        <HBox spacing="10">
-            <Label text="Total: " />
-            <Label fx:id="totalLabel" text="Rp 0.00" style="-fx-font-size: 18px;"/>
-            <ComboBox fx:id="paymentMethod">
-                <items>
-                    <FXCollections fx:factory="observableArrayList">
-                        <String fx:value="Cash"/>
-                        <String fx:value="Cashless - QRIS"/>
-                        <String fx:value="Cashless - Kartu"/>
-                    </FXCollections>
-                </items>
-            </ComboBox>
-            <Button text="Bayar" onAction="#handlePayment"/>
-        </HBox>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Label text="Keranjang Belanja" style="-fx-font-weight: bold;"/>
+            <TableView fx:id="cartTable" prefHeight="200">
+                <columns>
+                    <TableColumn fx:id="cartName" text="Produk"/>
+                    <TableColumn fx:id="cartPrice" text="Harga"/>
+                    <TableColumn fx:id="cartQty" text="Jumlah"/>
+                </columns>
+            </TableView>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Total:"/>
+                <Label fx:id="totalLabel" text="Rp 0.00" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+                <Label text="Metode Pembayaran:"/>
+                <ComboBox fx:id="paymentMethod"/>
+                <Button text="Bayar" onAction="#handlePayment"/>
+            </HBox>
+        </VBox>
     </bottom>
 </BorderPane>

@@ -9,112 +9,105 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TransactionController {
-    private Connection conn;
+    private final Connection conn;
 
     public TransactionController() {
         conn = DatabaseConnection.getConnection();
     }
 
-    public List<Product> getAvailableProducts() {
-        List<Product> products = new ArrayList<>();
-        String query = "SELECT product_id, name, category, price, stock_quantity FROM products";
-
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
-            while (rs.next()) {
-                products.add(new Product(
-                        rs.getInt("product_id"),
-                        rs.getString("name"),
-                        rs.getString("category"),
-                        rs.getDouble("price"),
-                        rs.getInt("stock_quantity")
-                ));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return products;
-    }
-
-    private void updateStock(int productId, int quantity) {
-        String query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE product_id = ?";
-
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, quantity);
-            stmt.setInt(2, productId);
-            stmt.executeUpdate();
-            System.out.println("Stok produk berhasil diperbarui!");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean addTransaction(Transaction transaction, int productId, int quantity) {
-        String query = "INSERT INTO transactions (user_id, total_price, payment_method) VALUES (?, ?, ?)";
-
-        try (PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setInt(1, transaction.getUserId());
-            stmt.setDouble(2, transaction.getTotalPrice());
-            stmt.setString(3, transaction.getPaymentMethod());
-
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    int transactionId = rs.getInt(1);
-                    boolean detailsSaved = addTransactionDetail(transactionId, productId, quantity, transaction.getTotalPrice());
-
-                    if (detailsSaved) {
-                        updateStock(productId, quantity);
-                        return true;
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-
-    private boolean addTransactionDetail(int transactionId, int productId, int quantity, double subtotal) {
-        String query = "INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, transactionId);
-            stmt.setInt(2, productId);
-            stmt.setInt(3, quantity);
-            stmt.setDouble(4, subtotal);
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    public String getUserNameById(int userId) {
-        String query = "SELECT name FROM users WHERE user_id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+    public boolean isUserExists(int userId) {
+        String sql = "SELECT id FROM users WHERE id = ? AND role = 'kasir'";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getString("name");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return "Unknown User"; // Jika tidak ditemukan
-    }
-
-    public boolean isUserExists(int userId) {
-        String query = "SELECT 1 FROM users WHERE user_id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, userId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next(); // return true jika user ditemukan
-            }
+            return rs.next();
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
 
+    public List<Product> getAvailableProducts() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM products WHERE stock_quantity > 0";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Product product = new Product(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("category"),
+                        rs.getDouble("price"),
+                        rs.getInt("stock_quantity")
+                );
+                products.add(product);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return products;
+    }
+
+    public boolean addTransactionBatch(Transaction transaction, List<Product> cartItems) {
+        String insertTransaction = "INSERT INTO transactions (user_id, date, total, payment_method) VALUES (?, ?, ?, ?)";
+        String insertDetail = "INSERT INTO transaction_details (transaction_id, product_id, quantity, price) VALUES (?, ?, ?, ?)";
+        String updateStock = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?";
+
+        try {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement transStmt = conn.prepareStatement(insertTransaction, Statement.RETURN_GENERATED_KEYS)) {
+                transStmt.setInt(1, transaction.getUserId());
+                transStmt.setTimestamp(2, transaction.getTransactionDate());
+                transStmt.setDouble(3, transaction.getTotalPrice());
+                transStmt.setString(4, transaction.getPaymentMethod());
+                transStmt.executeUpdate();
+
+                ResultSet generatedKeys = transStmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    int transactionId = generatedKeys.getInt(1);
+
+                    try (PreparedStatement detailStmt = conn.prepareStatement(insertDetail);
+                         PreparedStatement stockStmt = conn.prepareStatement(updateStock)) {
+                        for (Product item : cartItems) {
+                            detailStmt.setInt(1, transactionId);
+                            detailStmt.setInt(2, item.getProductId());
+                            detailStmt.setInt(3, item.getStockQuantity());
+                            detailStmt.setDouble(4, item.getPrice());
+                            detailStmt.addBatch();
+
+                            stockStmt.setInt(1, item.getStockQuantity());
+                            stockStmt.setInt(2, item.getProductId());
+                            stockStmt.addBatch();
+                        }
+                        detailStmt.executeBatch();
+                        stockStmt.executeBatch();
+                    }
+                } else {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
+            return false;
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

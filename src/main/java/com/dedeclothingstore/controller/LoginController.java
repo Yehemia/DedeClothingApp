@@ -27,7 +27,6 @@ public class LoginController {
         return currentUserId;
     }
 
-
     public static void setCurrentUserId(int currentUserId) {
         LoginController.currentUserId = currentUserId;
     }

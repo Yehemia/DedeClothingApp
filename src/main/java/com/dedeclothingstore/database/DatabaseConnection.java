@@ -6,7 +6,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
-    private static final String URL = "jdbc:mysql://localhost:3306/dede_clothing";
+    private static final String URL = "jdbc:mysql://localhost:3306/dede_db";
     private static final String USER = "root"; // Sesuaikan dengan username MySQL-mu
     private static final String PASSWORD = ""; // Jika ada password, isi di sini
 

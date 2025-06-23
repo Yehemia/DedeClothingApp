@@ -1,7 +1,7 @@
 package com.dedeclothingstore.controller;
 
 import javafx.fxml.FXML;
-import com.dedeclothingstore.database.DatabaseConnection;
+import com.dedeclothingstore.util.DatabaseConnection;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -48,7 +48,7 @@ public class LoginController {
 
             if (rs.next()) {
                 setCurrentUserId(rs.getInt("user_id"));
-                String role = rs.getString("role"); // Ambil peran user
+                String role = rs.getString("role");
 
                 switch (role) {
                     case "Kasir":

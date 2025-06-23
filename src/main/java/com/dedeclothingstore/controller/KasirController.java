@@ -1,6 +1,6 @@
 package com.dedeclothingstore.controller;
 
-import com.dedeclothingstore.database.DatabaseConnection;
+import com.dedeclothingstore.util.DatabaseConnection;
 import com.dedeclothingstore.model.Product;
 import com.dedeclothingstore.model.Transaction;
 import javafx.collections.FXCollections;
@@ -11,7 +11,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.sql.Connection;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 
 public class KasirController {

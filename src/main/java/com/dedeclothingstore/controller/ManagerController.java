@@ -1,5 +1,5 @@
 package com.dedeclothingstore.controller;
-import com.dedeclothingstore.database.DatabaseConnection;
+import com.dedeclothingstore.util.DatabaseConnection;
 import com.dedeclothingstore.model.Transaction;
 import javafx.fxml.FXML;
 import javafx.scene.chart.CategoryAxis;

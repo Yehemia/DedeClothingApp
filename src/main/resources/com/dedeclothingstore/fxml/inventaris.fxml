@@ -145,7 +145,7 @@
                 <TextField fx:id="stockField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
                 <!-- Column 2 -->
-                <Label text="SKU/Barcode:*" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                <Label text="SKU:*" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
                 <TextField fx:id="skuField" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
 
                 <Label text="Ukuran:" GridPane.rowIndex="1" GridPane.columnIndex="2"/>

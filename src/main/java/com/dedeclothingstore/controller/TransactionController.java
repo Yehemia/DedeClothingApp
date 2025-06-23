@@ -1,6 +1,6 @@
 package com.dedeclothingstore.controller;
 
-import com.dedeclothingstore.database.DatabaseConnection;
+import com.dedeclothingstore.util.DatabaseConnection;
 import com.dedeclothingstore.model.Product;
 import com.dedeclothingstore.model.Transaction;
 
@@ -16,7 +16,7 @@ public class TransactionController {
     }
 
     public boolean isUserExists(int userId) {
-        String sql = "SELECT id FROM users WHERE id = ? AND role = 'kasir'";
+        String sql = "SELECT user_id FROM users WHERE user_id = ? AND role = 'kasir'";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             ResultSet rs = stmt.executeQuery();
@@ -36,7 +36,7 @@ public class TransactionController {
 
             while (rs.next()) {
                 Product product = new Product(
-                        rs.getInt("id"),
+                        rs.getInt("product_id"),
                         rs.getString("name"),
                         rs.getString("category"),
                         rs.getDouble("price"),
@@ -52,9 +52,9 @@ public class TransactionController {
     }
 
     public boolean addTransactionBatch(Transaction transaction, List<Product> cartItems) {
-        String insertTransaction = "INSERT INTO transactions (user_id, date, total, payment_method) VALUES (?, ?, ?, ?)";
-        String insertDetail = "INSERT INTO transaction_details (transaction_id, product_id, quantity, price) VALUES (?, ?, ?, ?)";
-        String updateStock = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?";
+        String insertTransaction = "INSERT INTO transactions (user_id, transaction_date, total_price, payment_method) VALUES (?, ?, ?, ?)";
+        String insertDetail = "INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES (?, ?, ?, ?)";
+        String updateStock = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE product_id = ?";
 
         try {
             conn.setAutoCommit(false);

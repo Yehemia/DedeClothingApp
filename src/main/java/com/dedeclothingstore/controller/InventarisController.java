@@ -1,6 +1,6 @@
 package com.dedeclothingstore.controller;
 
-import com.dedeclothingstore.database.DatabaseConnection;
+import com.dedeclothingstore.util.DatabaseConnection;
 import com.dedeclothingstore.model.Product;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -53,7 +53,7 @@ public class InventarisController {
 
         sizeComboBox.getSelectionModel().selectFirst();
         categoryComboBox.getSelectionModel().selectFirst();
-        itemsPerPageCombo.getSelectionModel().select(1); // Default to 10 items per page
+        itemsPerPageCombo.getSelectionModel().select(1);
 
         itemsPerPageCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             try {
@@ -78,7 +78,6 @@ public class InventarisController {
         colSupplier.setCellValueFactory(new PropertyValueFactory<>("supplier"));
         colDate.setCellValueFactory(new PropertyValueFactory<>("entryDate"));
 
-        // Add edit and delete buttons to action column
         colAction.setCellFactory(param -> new TableCell<>() {
             private final Button editButton = new Button("Edit");
             private final Button deleteButton = new Button("Hapus");
@@ -314,7 +313,6 @@ public class InventarisController {
     @FXML
     private void editProduct(Product product) {
         selectedProduct = product;
-
         nameField.setText(product.getName());
         skuField.setText(product.getSku());
         categoryComboBox.setValue(product.getCategory());

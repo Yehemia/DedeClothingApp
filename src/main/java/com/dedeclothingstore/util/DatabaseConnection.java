@@ -1,4 +1,4 @@
-package com.dedeclothingstore.database;
+package com.dedeclothingstore.util;
 
 
 import java.sql.Connection;

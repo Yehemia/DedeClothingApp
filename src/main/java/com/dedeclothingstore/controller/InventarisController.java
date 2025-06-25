@@ -1,7 +1,7 @@
 package com.dedeclothingstore.controller;
 
-import com.dedeclothingstore.util.DatabaseConnection;
 import com.dedeclothingstore.model.Product;
+import com.dedeclothingstore.util.DatabaseConnection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -9,31 +9,46 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 public class InventarisController {
-    @FXML private TableView<Product> productTable;
-    @FXML private TextField searchField, nameField, priceField, stockField, skuField, colorField, supplierField;
-    @FXML private ComboBox<String> categoryComboBox, sizeComboBox, itemsPerPageCombo;
-    @FXML private Button saveButton, updateButton, cancelButton, prevPageBtn, nextPageBtn;
-    @FXML private Label lowStockLabel, pageInfoLabel;
+    // Deklarasi FXML dari file .fxml
+    @FXML
+    private TableView<Product> productTable;
+    @FXML
+    private TextField searchField, nameField, priceField, stockField, skuField, colorField, supplierField;
+    @FXML
+    private ComboBox<String> categoryComboBox, sizeComboBox, itemsPerPageCombo;
+    @FXML
+    private Button saveButton, updateButton, cancelButton, prevPageBtn, nextPageBtn;
+    @FXML
+    private Label lowStockLabel, pageInfoLabel;
+    @FXML
+    private TableColumn<Product, String> colName, colSKU, colCategory, colSize, colColor, colSupplier, colDate;
+    @FXML
+    private TableColumn<Product, Double> colPrice;
+    @FXML
+    private TableColumn<Product, Integer> colStock;
+    @FXML
+    private TableColumn<Product, Void> colAction;
 
-    // Table columns
-    @FXML private TableColumn<Product, String> colName, colSKU, colCategory, colSize, colColor, colSupplier, colDate;
-    @FXML private TableColumn<Product, Double> colPrice;
-    @FXML private TableColumn<Product, Integer> colStock;
-    @FXML private TableColumn<Product, Void> colAction;
-
+    // Deklarasi untuk VBox yang berisi form
     @FXML
     private VBox formContainer;
 
-
-    private ObservableList<Product> productList = FXCollections.observableArrayList();
-    private Connection conn;
+    // Variabel instance
+    private final ObservableList<Product> productList = FXCollections.observableArrayList();
+    private final Connection conn;
     private int currentPage = 1;
     private int itemsPerPage = 10;
     private int totalPages = 1;
@@ -45,27 +60,26 @@ public class InventarisController {
 
     @FXML
     public void initialize() {
+        // Setup UI
         setupTableColumns();
-        loadProducts();
         setupPagination();
+        setupFormControls();
+
+        // Muat data awal
+        loadProducts();
         checkLowStockItems();
 
-
-        sizeComboBox.getSelectionModel().selectFirst();
-        categoryComboBox.getSelectionModel().selectFirst();
-        itemsPerPageCombo.getSelectionModel().select(1);
-
+        // Listener untuk mengubah item per halaman
         itemsPerPageCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            try {
+            if (newVal != null) {
                 itemsPerPage = Integer.parseInt(newVal);
                 currentPage = 1;
                 loadProducts();
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid number: " + newVal);
             }
         });
-
     }
+
+    // --- METODE SETUP UI ---
 
     private void setupTableColumns() {
         colName.setCellValueFactory(new PropertyValueFactory<>("name"));
@@ -77,93 +91,115 @@ public class InventarisController {
         colStock.setCellValueFactory(new PropertyValueFactory<>("stockQuantity"));
         colSupplier.setCellValueFactory(new PropertyValueFactory<>("supplier"));
         colDate.setCellValueFactory(new PropertyValueFactory<>("entryDate"));
-
-        colAction.setCellFactory(param -> new TableCell<>() {
-            private final Button editButton = new Button("Edit");
-            private final Button deleteButton = new Button("Hapus");
-
-            {
-                editButton.setStyle("-fx-background-color: #4a6fa5; -fx-text-fill: white;");
-                deleteButton.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
-
-                editButton.setOnAction(event -> {
-                    Product product = getTableView().getItems().get(getIndex());
-                    editProduct(product);
-                });
-
-                deleteButton.setOnAction(event -> {
-                    Product product = getTableView().getItems().get(getIndex());
-                    deleteProduct(product);
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    HBox buttons = new HBox(5, editButton, deleteButton);
-                    setGraphic(buttons);
-                }
-            }
-        });
+        addActionButtonsToTable();
     }
 
     private void setupPagination() {
-        updatePaginationControls();
-    }
-
-    private void updatePaginationControls() {
+        itemsPerPageCombo.setItems(FXCollections.observableArrayList("5", "10", "20", "50"));
+        itemsPerPageCombo.setValue("10");
         pageInfoLabel.setText(String.format("Halaman %d dari %d", currentPage, totalPages));
-
-        prevPageBtn.setDisable(currentPage <= 1);
-        nextPageBtn.setDisable(currentPage >= totalPages);
+        prevPageBtn.setGraphic(new FontIcon(FontAwesomeSolid.ANGLE_LEFT));
+        nextPageBtn.setGraphic(new FontIcon(FontAwesomeSolid.ANGLE_RIGHT));
     }
+
+    private void setupFormControls(){
+        categoryComboBox.setItems(FXCollections.observableArrayList("Kemeja", "Kaos", "Celana", "Jaket", "Aksesoris"));
+        sizeComboBox.setItems(FXCollections.observableArrayList("S", "M", "L", "XL", "XXL", "All Size"));
+
+        nameField.setPromptText("Contoh: Kemeja Lengan Panjang");
+        skuField.setPromptText("Opsional, contoh: KLP-001");
+        colorField.setPromptText("Opsional, contoh: Biru Navy");
+        priceField.setPromptText("Hanya angka, contoh: 150000");
+        stockField.setPromptText("Hanya angka, contoh: 50");
+        supplierField.setPromptText("Opsional");
+
+        saveButton.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
+        updateButton.setGraphic(new FontIcon(FontAwesomeSolid.PENCIL_ALT));
+        cancelButton.setGraphic(new FontIcon(FontAwesomeSolid.TIMES));
+    }
+
+
+    // --- LOGIKA FORM (TAMPIL/SEMBUNYI) ---
+
+    @FXML
+    private void showAddForm() {
+        formContainer.setVisible(true);
+        formContainer.setManaged(true);
+        resetForm();
+        saveButton.setDisable(false);
+        updateButton.setDisable(true);
+        cancelButton.setDisable(false);
+    }
+
+    private void editProduct(Product product) {
+        formContainer.setVisible(true);
+        formContainer.setManaged(true);
+
+        selectedProduct = product;
+        nameField.setText(product.getName());
+        skuField.setText(product.getSku());
+        categoryComboBox.setValue(product.getCategory());
+        sizeComboBox.setValue(product.getSize());
+        colorField.setText(product.getColor());
+        priceField.setText(String.valueOf(product.getPrice()));
+        stockField.setText(String.valueOf(product.getStockQuantity()));
+        supplierField.setText(product.getSupplier());
+
+        saveButton.setDisable(true);
+        updateButton.setDisable(false);
+        cancelButton.setDisable(false);
+    }
+
+    @FXML
+    private void cancelEdit() {
+        formContainer.setVisible(false);
+        formContainer.setManaged(false);
+        resetForm();
+        saveButton.setDisable(true);
+        updateButton.setDisable(true);
+        cancelButton.setDisable(true);
+    }
+
+    @FXML
+    private void resetForm() {
+        selectedProduct = null;
+        nameField.clear();
+        skuField.clear();
+        if(!categoryComboBox.getItems().isEmpty()) categoryComboBox.getSelectionModel().selectFirst();
+        if(!sizeComboBox.getItems().isEmpty()) sizeComboBox.getSelectionModel().selectFirst();
+        colorField.clear();
+        priceField.clear();
+        stockField.clear();
+        supplierField.clear();
+    }
+
+
+    // --- LOGIKA DATABASE (CRUD) ---
 
     @FXML
     private void loadProducts() {
         productList.clear();
-        String query = "SELECT * FROM products LIMIT ? OFFSET ?";
         String countQuery = "SELECT COUNT(*) FROM products";
-
+        String query = "SELECT * FROM products ORDER BY product_id DESC LIMIT ? OFFSET ?";
         try {
-            // Get total count for pagination
-            Statement countStmt = conn.createStatement();
-            ResultSet countRs = countStmt.executeQuery(countQuery);
-            if (countRs.next()) {
-                int totalItems = countRs.getInt(1);
-                totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
+            try (Statement countStmt = conn.createStatement();
+                 ResultSet countRs = countStmt.executeQuery(countQuery)) {
+                if (countRs.next()) {
+                    int totalItems = countRs.getInt(1);
+                    totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
+                }
             }
-
-            // Get paginated data
-            PreparedStatement stmt = conn.prepareStatement(query);
-            stmt.setInt(1, itemsPerPage);
-            stmt.setInt(2, (currentPage - 1) * itemsPerPage);
-
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                Product product = new Product(
-                        rs.getInt("product_id"),
-                        rs.getString("name"),
-                        rs.getString("sku"),
-                        rs.getString("category"),
-                        rs.getString("size"),
-                        rs.getString("color"),
-                        rs.getDouble("price"),
-                        rs.getInt("stock_quantity"),
-                        rs.getString("supplier"),
-                        rs.getString("entry_date")
-                );
-                productList.add(product);
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, itemsPerPage);
+                stmt.setInt(2, (currentPage - 1) * itemsPerPage);
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    productList.add(createProductFromResultSet(rs));
+                }
             }
-
             productTable.setItems(productList);
             updatePaginationControls();
-            checkLowStockItems();
-
         } catch (SQLException e) {
-            e.printStackTrace();
             showAlert("Error", "Gagal memuat data produk: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
@@ -175,39 +211,21 @@ public class InventarisController {
             loadProducts();
             return;
         }
-
+        productList.clear();
         String query = "SELECT * FROM products WHERE name LIKE ? OR sku LIKE ? OR category LIKE ?";
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, "%" + searchKeyword + "%");
-            stmt.setString(2, "%" + searchKeyword + "%");
-            stmt.setString(3, "%" + searchKeyword + "%");
-
+            String keyword = "%" + searchKeyword + "%";
+            stmt.setString(1, keyword);
+            stmt.setString(2, keyword);
+            stmt.setString(3, keyword);
             ResultSet rs = stmt.executeQuery();
-            productList.clear();
-
             while (rs.next()) {
-                Product product = new Product(
-                        rs.getInt("product_id"),
-                        rs.getString("name"),
-                        rs.getString("sku"),
-                        rs.getString("category"),
-                        rs.getString("size"),
-                        rs.getString("color"),
-                        rs.getDouble("price"),
-                        rs.getInt("stock_quantity"),
-                        rs.getString("supplier"),
-                        rs.getString("entry_date")
-                );
-                productList.add(product);
+                productList.add(createProductFromResultSet(rs));
             }
-
-            productTable.setItems(productList);
             currentPage = 1;
             totalPages = 1;
             updatePaginationControls();
-
         } catch (SQLException e) {
-            e.printStackTrace();
             showAlert("Error", "Gagal mencari produk: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
@@ -222,22 +240,18 @@ public class InventarisController {
     @FXML
     private void saveProduct() {
         if (!validateInputs()) return;
-
-        String query = "INSERT INTO products (name, sku, category, size, color, price, stock_quantity, " +
-                "supplier, entry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+        String query = "INSERT INTO products (name, sku, category, size, color, price, stock_quantity, supplier, entry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
             setProductStatementValues(stmt);
             stmt.setString(9, LocalDate.now().format(DateTimeFormatter.ISO_DATE));
-
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
                 showAlert("Sukses", "Produk berhasil disimpan!", Alert.AlertType.INFORMATION);
-                resetForm();
+                cancelEdit();
                 loadProducts();
+                checkLowStockItems();
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             showAlert("Error", "Gagal menyimpan produk: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
@@ -245,24 +259,50 @@ public class InventarisController {
     @FXML
     private void updateProduct() {
         if (selectedProduct == null || !validateInputs()) return;
-
-        String query = "UPDATE products SET name=?, sku=?, category=?, size=?, color=?, price=?, " +
-                "stock_quantity=?, supplier=? WHERE product_id=?";
-
+        String query = "UPDATE products SET name=?, sku=?, category=?, size=?, color=?, price=?, stock_quantity=?, supplier=? WHERE product_id=?";
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
             setProductStatementValues(stmt);
             stmt.setInt(9, selectedProduct.getProductId());
-
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
                 showAlert("Sukses", "Produk berhasil diupdate!", Alert.AlertType.INFORMATION);
                 cancelEdit();
                 loadProducts();
+                checkLowStockItems();
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             showAlert("Error", "Gagal mengupdate produk: " + e.getMessage(), Alert.AlertType.ERROR);
         }
+    }
+
+    private void deleteProduct(Product product) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Apakah Anda yakin ingin menghapus produk " + product.getName() + "?", ButtonType.OK, ButtonType.CANCEL);
+        confirmation.setTitle("Konfirmasi Hapus");
+        confirmation.setHeaderText(null);
+        Optional<ButtonType> result = confirmation.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            String query = "DELETE FROM products WHERE product_id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, product.getProductId());
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows > 0) {
+                    showAlert("Sukses", "Produk berhasil dihapus!", Alert.AlertType.INFORMATION);
+                    loadProducts();
+                    checkLowStockItems();
+                }
+            } catch (SQLException e) {
+                showAlert("Error", "Gagal menghapus produk: " + e.getMessage(), Alert.AlertType.ERROR);
+            }
+        }
+    }
+
+
+    // --- METODE BANTUAN (HELPER) ---
+
+    private void updatePaginationControls() {
+        pageInfoLabel.setText(String.format("Halaman %d dari %d", currentPage, totalPages));
+        prevPageBtn.setDisable(currentPage <= 1);
+        nextPageBtn.setDisable(currentPage >= totalPages);
     }
 
     private void setProductStatementValues(PreparedStatement stmt) throws SQLException {
@@ -277,101 +317,65 @@ public class InventarisController {
     }
 
     private boolean validateInputs() {
-        if (nameField.getText().trim().isEmpty() ||
-                skuField.getText().trim().isEmpty() ||
-                priceField.getText().trim().isEmpty() ||
-                stockField.getText().trim().isEmpty()) {
-            showAlert("Peringatan", "Field dengan tanda * wajib diisi!", Alert.AlertType.WARNING);
+        if (nameField.getText().trim().isEmpty() || priceField.getText().trim().isEmpty() || stockField.getText().trim().isEmpty()) {
+            showAlert("Peringatan", "Field Nama, Harga, dan Stok wajib diisi!", Alert.AlertType.WARNING);
             return false;
         }
-
         try {
-            double price = Double.parseDouble(priceField.getText());
-            if (price <= 0) {
-                showAlert("Peringatan", "Harga harus lebih besar dari 0!", Alert.AlertType.WARNING);
-                return false;
-            }
+            Double.parseDouble(priceField.getText());
+            Integer.parseInt(stockField.getText());
         } catch (NumberFormatException e) {
-            showAlert("Peringatan", "Harga harus berupa angka!", Alert.AlertType.WARNING);
+            showAlert("Peringatan", "Harga dan Stok harus berupa angka!", Alert.AlertType.WARNING);
             return false;
         }
-
-        try {
-            int stock = Integer.parseInt(stockField.getText());
-            if (stock < 0) {
-                showAlert("Peringatan", "Stok tidak boleh negatif!", Alert.AlertType.WARNING);
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            showAlert("Peringatan", "Stok harus berupa bilangan bulat!", Alert.AlertType.WARNING);
-            return false;
-        }
-
         return true;
     }
 
-    @FXML
-    private void editProduct(Product product) {
-        selectedProduct = product;
-        nameField.setText(product.getName());
-        skuField.setText(product.getSku());
-        categoryComboBox.setValue(product.getCategory());
-        sizeComboBox.setValue(product.getSize());
-        colorField.setText(product.getColor());
-        priceField.setText(String.valueOf(product.getPrice()));
-        stockField.setText(String.valueOf(product.getStockQuantity()));
-        supplierField.setText(product.getSupplier());
-
-        saveButton.setVisible(false);
-        updateButton.setVisible(true);
-        cancelButton.setVisible(true);
+    private Product createProductFromResultSet(ResultSet rs) throws SQLException {
+        return new Product(
+                rs.getInt("product_id"),
+                rs.getString("name"),
+                rs.getString("sku"),
+                rs.getString("category"),
+                rs.getString("size"),
+                rs.getString("color"),
+                rs.getDouble("price"),
+                rs.getInt("stock_quantity"),
+                rs.getString("supplier"),
+                rs.getString("entry_date")
+        );
     }
 
-    @FXML
-    private void cancelEdit() {
-        selectedProduct = null;
-        resetForm();
-        saveButton.setVisible(true);
-        updateButton.setVisible(false);
-        cancelButton.setVisible(false);
-    }
-
-    @FXML
-    private void deleteProduct(Product product) {
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Konfirmasi Hapus");
-        confirmation.setHeaderText(null);
-        confirmation.setContentText("Apakah Anda yakin ingin menghapus produk " + product.getName() + "?");
-
-        Optional<ButtonType> result = confirmation.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            String query = "DELETE FROM products WHERE product_id = ?";
-
-            try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.setInt(1, product.getProductId());
-                int affectedRows = stmt.executeUpdate();
-
-                if (affectedRows > 0) {
-                    showAlert("Sukses", "Produk berhasil dihapus!", Alert.AlertType.INFORMATION);
-                    loadProducts();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                showAlert("Error", "Gagal menghapus produk: " + e.getMessage(), Alert.AlertType.ERROR);
+    private void addActionButtonsToTable() {
+        colAction.setCellFactory(param -> new TableCell<>() {
+            private final Button btnEdit = new Button("", new FontIcon(FontAwesomeSolid.PENCIL_ALT));
+            private final Button btnDelete = new Button("", new FontIcon(FontAwesomeSolid.TRASH));
+            private final HBox pane = new HBox(5, btnEdit, btnDelete);
+            {
+                btnEdit.getStyleClass().addAll("btn", "btn-success");
+                btnDelete.getStyleClass().addAll("btn", "btn-danger");
+                btnEdit.setOnAction(event -> editProduct(getTableView().getItems().get(getIndex())));
+                btnDelete.setOnAction(event -> deleteProduct(getTableView().getItems().get(getIndex())));
             }
-        }
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : pane);
+            }
+        });
     }
 
-    @FXML
-    private void resetForm() {
-        nameField.clear();
-        skuField.clear();
-        categoryComboBox.getSelectionModel().selectFirst();
-        sizeComboBox.getSelectionModel().selectFirst();
-        colorField.clear();
-        priceField.clear();
-        stockField.clear();
-        supplierField.clear();
+    private void checkLowStockItems() {
+        String query = "SELECT COUNT(*) FROM products WHERE stock_quantity < 5";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) {
+                int lowStockCount = rs.getInt(1);
+                lowStockLabel.setText(lowStockCount > 0 ? "Peringatan: Ada " + lowStockCount + " produk dengan stok rendah!" : "");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
@@ -390,64 +394,6 @@ public class InventarisController {
         }
     }
 
-    @FXML
-    private void exportData() {
-        showAlert("Info", "Cape kapan kapan aja deh, butuh support system ", Alert.AlertType.INFORMATION);
-    }
-
-    private void checkLowStockItems() {
-        String query = "SELECT COUNT(*) FROM products WHERE stock_quantity < 5";
-
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            if (rs.next() && rs.getInt(1) > 0) {
-                lowStockLabel.setText("Peringatan: Ada " + rs.getInt(1) + " produk dengan stok rendah!");
-            } else {
-                lowStockLabel.setText("");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @FXML
-    private void showAddForm() {
-        formContainer.setVisible(true);   // Tampilkan form
-        resetForm();                      // Kosongkan semua input
-        saveButton.setVisible(true);     // Tampilkan tombol Simpan
-        updateButton.setVisible(false);  // Sembunyikan tombol Update
-    }
-
-    private void addActionButtonsToTable() {
-        colAction.setCellFactory(param -> new TableCell<Product, Void>() {
-            private final Button btnEdit = new Button("Edit");
-            private final Button btnDelete = new Button("Delete");
-            private final HBox pane = new HBox(10, btnEdit, btnDelete);
-
-            {
-                btnEdit.setOnAction(event -> {
-                    Product product = getTableView().getItems().get(getIndex());
-                    editProduct(product);
-                });
-
-                btnDelete.setOnAction(event -> {
-                    Product product = getTableView().getItems().get(getIndex());
-                    deleteProduct(product);
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    setGraphic(pane);
-                }
-            }
-        });
-    }
     private void showAlert(String title, String message, Alert.AlertType alertType) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);

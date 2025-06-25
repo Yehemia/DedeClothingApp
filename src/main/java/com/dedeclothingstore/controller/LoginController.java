@@ -1,39 +1,44 @@
 package com.dedeclothingstore.controller;
 
-import javafx.fxml.FXML;
+import com.dedeclothingstore.model.User;
 import com.dedeclothingstore.util.DatabaseConnection;
+import com.dedeclothingstore.util.SessionManager;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.TextField;
-import javafx.scene.control.PasswordField;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.sql.*;
-
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class LoginController {
     @FXML
     private TextField usernameField;
     @FXML
     private PasswordField passwordField;
+    @FXML
+    private Button loginButton;
 
     private Connection conn;
-
-    private static int currentUserId;
-
-    public static int getCurrentUserId() {
-        return currentUserId;
-    }
-
-    public static void setCurrentUserId(int currentUserId) {
-        LoginController.currentUserId = currentUserId;
-    }
 
     public LoginController() {
         conn = DatabaseConnection.getConnection();
     }
+
+    @FXML
+    public void initialize() {
+        loginButton.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_IN_ALT));
+    }
+
 
     @FXML
     private void handleLogin() {
@@ -47,9 +52,16 @@ public class LoginController {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                setCurrentUserId(rs.getInt("user_id"));
-                String role = rs.getString("role");
+                User loggedInUser = new User(
+                        rs.getInt("user_id"),
+                        rs.getString("name"),
+                        rs.getString("role"),
+                        rs.getString("username"),
+                        null
+                );
+                SessionManager.getInstance().login(loggedInUser);
 
+                String role = loggedInUser.getRole();
                 switch (role) {
                     case "Kasir":
                         loadScene("/com/dedeclothingstore/fxml/kasir.fxml");
@@ -62,14 +74,11 @@ public class LoginController {
                         break;
                 }
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Login Gagal");
-                alert.setHeaderText(null);
-                alert.setContentText("Username atau password salah.");
-                alert.showAndWait();
+                showAlert("Login Gagal", "Username atau password salah.");
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            showAlert("Error Database", "Gagal terhubung ke database.");
         }
     }
 
@@ -82,6 +91,14 @@ public class LoginController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
 }
